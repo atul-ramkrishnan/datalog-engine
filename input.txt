@@ -1,0 +1,5 @@
+e(a, b).    %This is a comment after a valid line.
+e(b, c).
+% This is a comment in a new line
+path(X, Y) :- e(X, Y).
+path(X, Y) :- path(X, Z), path(Z, Y).
