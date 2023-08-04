@@ -9,11 +9,13 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Evaluate a Datalog program.")
     parser.add_argument("file", type=str, help="The name of the file containing the Datalog program.")
     parser.add_argument("method", type=str, choices=["naive", "seminaive"], help="The method of evaluation (naive or seminaive).")
+    parser.add_argument("--output", type=str, default="output.txt", help="The name of the file to which the output will be written (default: output.txt).")
 
     args = parser.parse_args()
 
     file_name = args.file
     method = args.method
+    output = args.output
     
     program = ""
     with open(file_name) as f:
@@ -37,11 +39,14 @@ if __name__ == '__main__':
         elif p.type == 'rule':
             rules.append(p)
 
+    database = ""
     if method == "naive":
         with Timer("Naive evaluation"):
             database = semi_naive_evaluation(facts, rules)
-            print(database)
+            
     else:
         with Timer("Semi-naive evaluation"):
             database = semi_naive_evaluation(facts, rules)
-            print(database)
+
+    with open(output, 'w') as file:
+                file.write(database)
