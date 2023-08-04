@@ -1,5 +1,5 @@
 import ply.yacc as yacc
-from .model import Fact, Rule, Predicate
+from ..model.model import Fact, Rule, Predicate
 
 
 class Parser(object):
