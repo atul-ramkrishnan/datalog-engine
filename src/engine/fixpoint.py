@@ -1,6 +1,16 @@
 from ..model.model import Fact, Predicate
 
 
+def convert_to_datalog_format(database):
+    sorted_data = sorted(database, key=lambda x: x.predicate)
+    result = ""
+    for item in sorted_data:
+        predicate = item.predicate
+        terms = ", ".join(item.terms)
+        result += f"{predicate}({terms}).\n"
+    return result
+
+
 def naive_evaluation(base_facts, rules):
     database = set(fact.fact for fact in base_facts)
     new_facts = database.copy()  # Initialize new_facts with base facts
@@ -17,7 +27,7 @@ def naive_evaluation(base_facts, rules):
         database.update(next_new_facts)
         new_facts = next_new_facts  # Update new_facts for the next iteration
 
-    return database
+    return convert_to_datalog_format(database)
 
 
 def semi_naive_evaluation(base_facts, rules):
@@ -36,7 +46,7 @@ def semi_naive_evaluation(base_facts, rules):
         database.update(next_new_facts)
         new_facts = next_new_facts  # Update new_facts for the next iteration
 
-    return database
+    return convert_to_datalog_format(database)
 
 
 def match_and_join(rule, database):
