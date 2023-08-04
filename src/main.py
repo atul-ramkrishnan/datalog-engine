@@ -1,5 +1,6 @@
 import sys
-from parser.tokenizer import Tokenizer
+from interpreter.tokenizer import Tokenizer
+from interpreter.parser import Parser
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
@@ -11,6 +12,10 @@ if __name__ == '__main__':
 
     # print(program)
     tokenizer = Tokenizer()
-    tokenizer.build(debug=False)
-    tokenizer.test(program)
+    tokenizer.build()
+    # tokenizer.test(program)
+
+    parser = Parser(tokenizer)
+    parser.build()
+    parser.test(program)
     
