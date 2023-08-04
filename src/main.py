@@ -1,26 +1,29 @@
-import sys
+import argparse
 from .interpreter.tokenizer import Tokenizer
 from .interpreter.parser import Parser
-import pprint
 from .engine.fixpoint import naive_evaluation, semi_naive_evaluation
+from .utilities.timer import Timer
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 2:
-        raise TypeError(f"main takes exactly 1 argument ({len(sys.argv)} given)")
+    parser = argparse.ArgumentParser(description="Evaluate a Datalog program.")
+    parser.add_argument("file", type=str, help="The name of the file containing the Datalog program.")
+    parser.add_argument("method", type=str, choices=["naive", "seminaive"], help="The method of evaluation (naive or seminaive).")
+
+    args = parser.parse_args()
+
+    file_name = args.file
+    method = args.method
     
     program = ""
-    with open(sys.argv[1]) as f:
+    with open(file_name) as f:
         program = f.read()
 
-    # print(program)
     tokenizer = Tokenizer()
     tokenizer.build()
-    # tokenizer.test(program)
 
     parser = Parser(tokenizer)
     parser.build()
-    # parser.test(program)
 
     facts = []
     rules = []
@@ -34,10 +37,11 @@ if __name__ == '__main__':
         elif p.type == 'rule':
             rules.append(p)
 
-    pp = pprint.PrettyPrinter(depth=4)
-    # pp.pprint(facts)
-    # pp.pprint(rules)
-    # test(facts, rules)
-    database = semi_naive_evaluation(facts, rules)
-    print(database)
-    
+    if method == "naive":
+        with Timer("Naive evaluation"):
+            database = semi_naive_evaluation(facts, rules)
+            print(database)
+    else:
+        with Timer("Semi-naive evaluation"):
+            database = semi_naive_evaluation(facts, rules)
+            print(database)
