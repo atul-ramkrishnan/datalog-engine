@@ -1,4 +1,4 @@
-from ..model.model import Fact, Predicate
+from ..model.model import Predicate
 
 
 def convert_to_datalog_format(database):
