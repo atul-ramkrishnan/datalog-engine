@@ -1,0 +1,4 @@
+e(a, b).
+e(b, c).
+xyz(1).
+camelCase(a, 5, constant).
