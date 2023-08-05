@@ -42,7 +42,7 @@ if __name__ == '__main__':
     database = ""
     if method == "naive":
         with Timer("Naive evaluation"):
-            database = semi_naive_evaluation(facts, rules)
+            database = naive_evaluation(facts, rules)
             
     else:
         with Timer("Semi-naive evaluation"):
