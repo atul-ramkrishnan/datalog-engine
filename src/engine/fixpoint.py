@@ -77,7 +77,6 @@ def match_and_join(rule, database):
 
 def fact_matches_predicate(fact, predicate):
     # Check if the predicate names match
-    # print(fact)
     if fact.predicate != predicate.predicate:
         return False
 
@@ -132,13 +131,3 @@ def project_head(rule, match):
     )
 
     return derived_fact_predicate
-
-
-# def test(facts, rules):
-#     database = set(fact.fact for fact in facts)
-
-#     for rule in rules:
-#         for match in match_and_join(rule, database):
-#             print("<----------->")
-#             print(rule)
-#             print(match)
