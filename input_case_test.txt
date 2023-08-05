@@ -1,0 +1,3 @@
+aBC(12).
+p(Xyz) :- aBC(Xyz).
+qw(ZS) :- p(ZS).
