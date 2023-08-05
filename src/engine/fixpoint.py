@@ -126,7 +126,6 @@ def project_head(rule, match):
     derived_fact_predicate = Predicate(
         name=head.predicate,
         terms=derived_terms,
-        isNegated=head.isNegated,
         type='predicate'
     )
 

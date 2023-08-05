@@ -20,7 +20,7 @@ class Fact(object):
             return False
 
     def __hash__(self):
-        return hash((self.fact.predicate, tuple(self.fact.terms), self.fact.isNegated, self.fact.type, self.type))
+        return hash((self.fact.predicate, tuple(self.fact.terms), self.fact.type, self.type))
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -30,10 +30,9 @@ class Fact(object):
 
 
 class Predicate(object):
-    def __init__(self, name="", terms=[], isNegated=False, type = "predicate"):
+    def __init__(self, name="", terms=[], type = "predicate"):
         self.predicate = name
         self.terms = terms
-        self.isNegated = isNegated
         self.type = type
 
     def __eq__(self, other):
@@ -43,7 +42,7 @@ class Predicate(object):
             return False
     
     def __hash__(self):
-        return hash((self.predicate, tuple(self.terms), self.isNegated, self.type))
+        return hash((self.predicate, tuple(self.terms), self.type))
 
     def __ne__(self, other):
         return not self.__eq__(other)
