@@ -46,7 +46,7 @@ class Tokenizer(object):
                 debug (Boolean): Produces debugging information
                 debuglog (str): Writes the debugging information in the file
                 ...
-            
+
             Returns:
                 tokenizer (ply.lex.lex): Tokenizer object
         '''
@@ -58,13 +58,13 @@ class Tokenizer(object):
 
             Args:
                 data (str): Data which is to be tokenized
-            
+
             Returns:
                 None
         '''
         self.lexer.input(data)
         while True:
-             tok = self.lexer.token()
-             if not tok:
-                 break
-             print(tok)
+            tok = self.lexer.token()
+            if not tok:
+                break
+            print(tok)

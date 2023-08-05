@@ -82,11 +82,13 @@ def fact_matches_predicate(fact, predicate):
 
     # Check if the terms match, allowing for variables in the predicate
     for fact_term, predicate_term in zip(fact.terms, predicate.terms):
-        # If the predicate term is a variable (uppercase), it can match any fact term
+        # If the predicate term is a variable (uppercase), it can match any
+        # fact term
         if predicate_term[0].isupper():
             continue
 
-        # If the predicate term is a constant (lowercase), it must match the corresponding fact term
+        # If the predicate term is a constant (lowercase), it must match the
+        # corresponding fact term
         if fact_term != predicate_term:
             return False
 
@@ -97,18 +99,21 @@ def join_match_with_fact(match, fact, predicate):
     # Create a copy of the current match to avoid modifying the original
     joined_match = match.copy()
 
-    # Iterate over the terms of the fact and the corresponding terms of the predicate
+    # Iterate over the terms of the fact and the corresponding terms of the
+    # predicate
     for fact_term, predicate_term in zip(fact.terms, predicate.terms):
         # If the predicate term is a variable (uppercase)
         if predicate_term[0].isupper():
-            # If the variable is already bound in the match, check if the binding is consistent with the fact term
+            # If the variable is already bound in the match, check if the
+            # binding is consistent with the fact term
             if predicate_term in joined_match and joined_match[predicate_term] != fact_term:
                 return None  # Inconsistent binding, so the join is not possible
 
             # Bind the variable to the fact term in the joined match
             joined_match[predicate_term] = fact_term
 
-        # If the predicate term is a constant (lowercase), check if it matches the fact term
+        # If the predicate term is a constant (lowercase), check if it matches
+        # the fact term
         elif fact_term != predicate_term:
             return None  # Mismatched constant, so the join is not possible
 
@@ -119,7 +124,8 @@ def project_head(rule, match):
     # Extract the head of the rule
     head = rule.head
 
-    # Construct the derived fact's terms by replacing variables with their bindings in the match
+    # Construct the derived fact's terms by replacing variables with their
+    # bindings in the match
     derived_terms = [match[term] if term[0].isupper() else term for term in head.terms]
 
     # Construct the derived fact as a Predicate object

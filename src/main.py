@@ -18,7 +18,7 @@ if __name__ == '__main__':
     file_name = args.file
     method = args.method
     output = args.output
-    
+
     program = ""
     with open(file_name) as f:
         program = f.read()
@@ -40,7 +40,7 @@ if __name__ == '__main__':
                 facts.append(p)
             elif p.type == 'rule':
                 rules.append(p)
-        
+
         check_safety_rules(facts, rules)
     except Exception as e:
         print(e)
@@ -50,10 +50,10 @@ if __name__ == '__main__':
     if method == "naive":
         with Timer("Naive evaluation"):
             database = naive_evaluation(facts, rules)
-            
+
     else:
         with Timer("Semi-naive evaluation"):
             database = semi_naive_evaluation(facts, rules)
 
     with open(output, 'w') as file:
-                file.write(database)
+        file.write(database)

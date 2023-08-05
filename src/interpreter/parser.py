@@ -89,7 +89,7 @@ class Parser(object):
                 debug (Boolean): Produces debugging information
                 debuglog (str): Writes the debugging information in the file
                 ...
-            
+
             Returns:
                 parser (ply.yacc.yacc): Parser object
         '''
@@ -101,7 +101,7 @@ class Parser(object):
 
             Args:
                 data (str): Data which is to be parsed
-            
+
             Returns:
                 None
         '''
