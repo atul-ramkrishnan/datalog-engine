@@ -3,6 +3,7 @@ from .interpreter.tokenizer import Tokenizer
 from .interpreter.parser import Parser
 from .engine.fixpoint import naive_evaluation, semi_naive_evaluation
 from .utilities.timer import Timer
+from .interpreter.safety import check_safety_rules
 
 
 if __name__ == '__main__':
@@ -38,6 +39,8 @@ if __name__ == '__main__':
             facts.append(p)
         elif p.type == 'rule':
             rules.append(p)
+    
+    check_safety_rules(facts, rules)
 
     database = ""
     if method == "naive":
