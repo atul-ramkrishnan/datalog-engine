@@ -1,4 +1,5 @@
 import argparse
+import sys
 from .interpreter.tokenizer import Tokenizer
 from .interpreter.parser import Parser
 from .engine.fixpoint import naive_evaluation, semi_naive_evaluation
@@ -26,21 +27,24 @@ if __name__ == '__main__':
     tokenizer.build()
 
     parser = Parser(tokenizer)
-    parser.build()
+    parser.build(debug=True)
 
     facts = []
     rules = []
-    parsedProgram = parser.parser.parse(program)
-    # TODO: Handle syntax errors
-    if not parsedProgram:
-        print("ERROR")
-    for p in parsedProgram:
-        if p.type == 'fact':
-            facts.append(p)
-        elif p.type == 'rule':
-            rules.append(p)
-    
-    check_safety_rules(facts, rules)
+    try:
+        parsedProgram = parser.parser.parse(program)
+        if not parsedProgram:
+            raise Exception("Unknown error while parsing program.")
+        for p in parsedProgram:
+            if p.type == 'fact':
+                facts.append(p)
+            elif p.type == 'rule':
+                rules.append(p)
+        
+        check_safety_rules(facts, rules)
+    except Exception as e:
+        print(e)
+        sys.exit(1)
 
     database = ""
     if method == "naive":

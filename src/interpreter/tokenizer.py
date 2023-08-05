@@ -36,8 +36,7 @@ class Tokenizer(object):
 
     def t_error(self, t):
         # Error handling rule
-        print("Illegal character '%s'" % t.value[0])
-        t.lexer.skip(1)
+        raise Exception(f"Illegal character: {t.value[0]}")
 
     def build(self, **kwargs):
         '''

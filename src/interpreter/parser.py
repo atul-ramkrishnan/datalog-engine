@@ -6,7 +6,6 @@ class Parser(object):
     def __init__(self, tokenizer):
         self.tokenizer = tokenizer
         self.tokens = tokenizer.tokens
-        self.errorList = []
 
     def p_program(self, p):
         '''program : facts rules
@@ -80,8 +79,7 @@ class Parser(object):
         # p[0] = "\'" + p[1] + "\'"
 
     def p_error(self, p):
-        self.errorList.append("Syntax error in input! " + str(p) + "\n")
-        print("Syntax error in input! ", p)
+        raise Exception(f"Syntax error in input. {p}")
 
     def build(self, **kwargs):
         '''
