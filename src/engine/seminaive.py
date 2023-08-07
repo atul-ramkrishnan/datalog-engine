@@ -1,7 +1,14 @@
 from ..model.model import Predicate
 
 def convert_to_datalog_format(database):
-    sorted_data = sorted(database, key=lambda x: x.predicate)
+    # Combine all the inner sets into one set
+    combined_set = set()
+    for value_set in database.values():
+        combined_set.update(value_set)
+
+    # Sort the combined set based on the predicate
+    sorted_data = sorted(combined_set, key=lambda x: x.predicate)
+
     result = ""
     for item in sorted_data:
         predicate = item.predicate
@@ -41,11 +48,11 @@ def semi_naive_evaluation(base_facts, rules):
         for rule in rules:
             head_predicate = rule.head.predicate
             rule_big_delta = compute_big_delta(rule, delta, database)
-            print("rule: ", rule)
-            print("delta: ", delta)
-            print("database: ", database)
-            print("rule_big_delta:", rule_big_delta)
-            print()
+            # print("rule: ", rule)
+            # print("delta: ", delta)
+            # print("database: ", database)
+            # print("rule_big_delta:", rule_big_delta)
+            # print()
 
             # Update the next_big_delta
             next_big_delta[head_predicate].update(rule_big_delta)
@@ -56,7 +63,7 @@ def semi_naive_evaluation(base_facts, rules):
 
 
 
-    # print(database)
+    print(database)
     return convert_to_datalog_format(database)
 
 def compute_big_delta(rule, delta, database):
@@ -69,11 +76,23 @@ def compute_big_delta(rule, delta, database):
         # Use the delta for the current predicate and the database for the other predicates
         matches = match_and_join_with_delta(predicate, delta, other_predicates, database)
         for match in matches:
-            # print(match)
             derived_fact = project_head(rule, match)
-            big_delta.add(derived_fact)
+            
+            # Ensure that the terms in the derived fact are distinct
+            if len(set(derived_fact.terms)) == len(derived_fact.terms):
+                big_delta.add(derived_fact)
+
+             # Tracing information
+            print("Rule:", rule)
+            print("Matched with:", match)
+            print("Derived Fact:", derived_fact)
+            print("Current Delta:", delta)
+            print("Current Database:", database)
+            print("------------------------------")
 
     return big_delta
+
+
 
 def match_and_join_with_delta(current_predicate, delta, other_predicates, database):
     matches = []
@@ -110,33 +129,28 @@ def join(predicate1, fact1, predicate2, fact2):
     unifier = {}
 
     # Unify predicate1 and fact1
-    for term1, term2 in zip(predicate1.terms, fact1.terms):
+    if not unify_terms(predicate1.terms, fact1.terms, unifier):
+        return None
+
+    # If predicate2 and fact2 are provided, unify them as well
+    if predicate2 and fact2:
+        if not unify_terms(predicate2.terms, fact2.terms, unifier):
+            return None
+
+    return unifier
+
+def unify_terms(terms1, terms2, unifier):
+    for term1, term2 in zip(terms1, terms2):
         if term1[0].isupper():  # If term1 is a variable
             if term1 in unifier:
                 if unifier[term1] != term2:
-                    return None  # Mismatch, so no unification possible
+                    return False  # Mismatch, so no unification possible
             else:
                 unifier[term1] = term2
         else:
             if term1 != term2:
-                return None  # Mismatch, so no unification possible
-
-    # If predicate2 and fact2 are provided, unify them as well
-    if predicate2 and fact2:
-        for term1, term2 in zip(predicate2.terms, fact2.terms):
-            if term1[0].isupper():  # If term1 is a variable
-                if term1 in unifier:
-                    if unifier[term1] != term2:
-                        return None  # Mismatch, so no unification possible
-                else:
-                    unifier[term1] = term2
-            else:
-                if term1 != term2:
-                    return None  # Mismatch, so no unification possible
-
-    return unifier
-
-
+                return False  # Mismatch, so no unification possible
+    return True
 
 
 def project_head(rule, match):
