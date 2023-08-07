@@ -31,25 +31,30 @@ def semi_naive_evaluation(base_facts, rules):
 
     while any(delta.values()):  # Continue as long as there are new facts in any of the delta sets
         print("--------------Iteration----------------")
-        next_database = database.copy()
-        next_delta = {predicate: set() for predicate in unique_predicates}
+        
+        # Update database with the union of its current facts and the delta from the previous iteration
+        for predicate in unique_predicates:
+            database[predicate].update(delta[predicate])
+
+        next_big_delta = {predicate: set() for predicate in unique_predicates}
 
         for rule in rules:
             head_predicate = rule.head.predicate
-            big_delta = compute_big_delta(rule, delta, database)
+            rule_big_delta = compute_big_delta(rule, delta, database)
             print("rule: ", rule)
             print("delta: ", delta)
             print("database: ", database)
-            print("big_delta:", big_delta)
+            print("rule_big_delta:", rule_big_delta)
             print()
-            
-            # Update the next_database and next_delta
-            next_database[head_predicate].update(big_delta)
-            next_delta[head_predicate] = big_delta - database[head_predicate]
 
-        # Update database and delta for the next iteration
-        database = next_database
-        delta = next_delta
+            # Update the next_big_delta
+            next_big_delta[head_predicate].update(rule_big_delta)
+
+        # Update delta for the next iteration
+        for predicate in unique_predicates:
+            delta[predicate] = next_big_delta[predicate] - database[predicate]
+
+
 
     # print(database)
     return convert_to_datalog_format(database)
@@ -74,34 +79,32 @@ def match_and_join_with_delta(current_predicate, delta, other_predicates, databa
     matches = []
 
     # Start with the facts from the delta for the current predicate
-    current_facts = delta[current_predicate.predicate]
+    current_facts = delta.get(current_predicate.predicate, set())
 
     for current_fact in current_facts:
-        # This will store potential matches for the current_fact
-        potential_matches = []
-
-        # If there are no other predicates, just unify the current_predicate with the current_fact
-        if not other_predicates:
-            match = join(current_predicate, current_fact, None, None)
-            if match:
-                matches.append(match)
-            continue
-
-        for predicate in other_predicates:
-            for fact in database[predicate.predicate]:
-                match = join(current_predicate, current_fact, predicate, fact)
-                if match:
-                    potential_matches.append(match)
-
-        # Check if we found matches for all other predicates
-        if len(potential_matches) == len(other_predicates):
-            # Merge all these matches into one unified match
-            unified_match = {}
-            for match in potential_matches:
-                unified_match.update(match)
-            matches.append(unified_match)
+        initial_match = join(current_predicate, current_fact, None, None)
+        if initial_match:
+            matches.extend(recursive_join(initial_match, other_predicates, database))
 
     return matches
+
+def recursive_join(current_match, remaining_predicates, database):
+    if not remaining_predicates:
+        return [current_match]
+
+    next_predicate = remaining_predicates[0]
+    next_facts = database.get(next_predicate.predicate, set())
+    matches = []
+
+    for next_fact in next_facts:
+        new_match = join(next_predicate, next_fact, None, None)
+        if new_match:
+            # Merge current_match and new_match
+            merged_match = {**current_match, **new_match}
+            matches.extend(recursive_join(merged_match, remaining_predicates[1:], database))
+
+    return matches
+
 
 def join(predicate1, fact1, predicate2, fact2):
     unifier = {}
