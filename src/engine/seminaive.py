@@ -77,10 +77,10 @@ def compute_big_delta(rule, delta, database):
         matches = match_and_join_with_delta(predicate, delta, other_predicates, database)
         for match in matches:
             derived_fact = project_head(rule, match)
-            
-            # Ensure that the terms in the derived fact are distinct
-            if len(set(derived_fact.terms)) == len(derived_fact.terms):
-                big_delta.add(derived_fact)
+            big_delta.add(derived_fact)
+            # # Ensure that the terms in the derived fact are distinct
+            # if len(set(derived_fact.terms)) == len(derived_fact.terms):
+            #     big_delta.add(derived_fact)
 
              # Tracing information
             print("Rule:", rule)
@@ -98,14 +98,19 @@ def match_and_join_with_delta(current_predicate, delta, other_predicates, databa
     matches = []
 
     # Start with the facts from the delta for the current predicate
-    current_facts = delta.get(current_predicate.predicate, set())
+    delta_facts = delta.get(current_predicate.predicate, set())
+    database_facts = database.get(current_predicate.predicate, set())
+    
+    # Merge the facts from delta and database
+    all_facts = delta_facts.union(database_facts)
 
-    for current_fact in current_facts:
+    for current_fact in all_facts:
         initial_match = join(current_predicate, current_fact, None, None)
         if initial_match:
             matches.extend(recursive_join(initial_match, other_predicates, database))
 
     return matches
+
 
 def recursive_join(current_match, remaining_predicates, database):
     if not remaining_predicates:
