@@ -111,18 +111,45 @@ def recursive_join(current_match, remaining_predicates, database):
     if not remaining_predicates:
         return [current_match]
 
-    next_predicate = remaining_predicates[0]
-    next_facts = database.get(next_predicate.predicate, set())
+    current_predicate = remaining_predicates[0]
+    next_predicates = remaining_predicates[1:]
+
+    current_facts = database.get(current_predicate.predicate, set())
     matches = []
 
-    for next_fact in next_facts:
-        new_match = join(next_predicate, next_fact, None, None)
+    for current_fact in current_facts:
+        # Consider the current match when joining
+        new_match = join_with_existing_match(current_predicate, current_fact, current_match)
         if new_match:
-            # Merge current_match and new_match
+            # Merge the current match with the new match
             merged_match = {**current_match, **new_match}
-            matches.extend(recursive_join(merged_match, remaining_predicates[1:], database))
+            matches.extend(recursive_join(merged_match, next_predicates, database))
 
     return matches
+
+def join_with_existing_match(predicate, fact, existing_match):
+    unifier = {}
+
+    # First, ensure that the existing match is consistent
+    for term in predicate.terms:
+        if term[0].isupper() and term in existing_match:
+            unifier[term] = existing_match[term]
+
+    # Now, try to unify the predicate with the fact
+    for term1, term2 in zip(predicate.terms, fact.terms):
+        if term1[0].isupper():  # If term1 is a variable
+            if term1 in unifier:
+                if unifier[term1] != term2:
+                    return None  # Mismatch, so no unification possible
+            else:
+                unifier[term1] = term2
+        else:
+            if term1 != term2:
+                return None  # Mismatch, so no unification possible
+
+    return unifier
+
+
 
 
 def join(predicate1, fact1, predicate2, fact2):
