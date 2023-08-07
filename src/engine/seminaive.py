@@ -16,7 +16,7 @@ def convert_to_datalog_format(database):
         result += f"{predicate}({terms}).\n"
     return result
 
-def semi_naive_evaluation(base_facts, rules):
+def semi_naive_evaluation(base_facts, rules, verbose=False):
     # Extract predicates from base_facts
     fact_predicates = {fact.fact.predicate for fact in base_facts}
 
@@ -33,26 +33,23 @@ def semi_naive_evaluation(base_facts, rules):
     database = {predicate: set() for predicate in unique_predicates}
     delta = {predicate: {fact.fact for fact in base_facts if fact.fact.predicate == predicate} for predicate in unique_predicates}
 
-    # print(database)
-    # print(delta)
-
-    while any(delta.values()):  # Continue as long as there are new facts in any of the delta sets
-        print("--------------Iteration----------------")
-        
+    i = 1
+    while any(delta.values()):  # Continue as long as there are new facts in any of the delta sets        
         # Update database with the union of its current facts and the delta from the previous iteration
+        if verbose:
+            print(f"<---------- Iteration {i} ---------->")
+            print(f"p[{i-1}]:")
+            print(convert_to_datalog_format(database))
+            print(f"delta(p[{i-1}]):")
+            print(convert_to_datalog_format(delta))
         for predicate in unique_predicates:
             database[predicate].update(delta[predicate])
-
+        
         next_big_delta = {predicate: set() for predicate in unique_predicates}
 
         for rule in rules:
             head_predicate = rule.head.predicate
             rule_big_delta = compute_big_delta(rule, delta, database)
-            # print("rule: ", rule)
-            # print("delta: ", delta)
-            # print("database: ", database)
-            # print("rule_big_delta:", rule_big_delta)
-            # print()
 
             # Update the next_big_delta
             next_big_delta[head_predicate].update(rule_big_delta)
@@ -61,9 +58,6 @@ def semi_naive_evaluation(base_facts, rules):
         for predicate in unique_predicates:
             delta[predicate] = next_big_delta[predicate] - database[predicate]
 
-
-
-    print(database)
     return convert_to_datalog_format(database)
 
 def compute_big_delta(rule, delta, database):
@@ -78,17 +72,14 @@ def compute_big_delta(rule, delta, database):
         for match in matches:
             derived_fact = project_head(rule, match)
             big_delta.add(derived_fact)
-            # # Ensure that the terms in the derived fact are distinct
-            # if len(set(derived_fact.terms)) == len(derived_fact.terms):
-            #     big_delta.add(derived_fact)
 
              # Tracing information
-            print("Rule:", rule)
-            print("Matched with:", match)
-            print("Derived Fact:", derived_fact)
-            print("Current Delta:", delta)
-            print("Current Database:", database)
-            print("------------------------------")
+            # print("Rule:", rule)
+            # print("Matched with:", match)
+            # print("Derived Fact:", derived_fact)
+            # print("Current Delta:", delta)
+            # print("Current Database:", database)
+            # print("------------------------------")
 
     return big_delta
 
@@ -186,9 +177,6 @@ def unify_terms(terms1, terms2, unifier):
 
 
 def project_head(rule, match):
-    # print(rule)
-    # print(match)
-    # Extract the head of the rule
     head = rule.head
 
     # Construct the derived fact's terms by replacing variables with their

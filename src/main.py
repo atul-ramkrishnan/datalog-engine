@@ -2,7 +2,8 @@ import argparse
 import sys
 from .interpreter.tokenizer import Tokenizer
 from .interpreter.parser import Parser
-from .engine.fixpoint import naive_evaluation, semi_naive_evaluation
+from .engine.naive import naive_evaluation
+from .engine.seminaive import semi_naive_evaluation
 from .utilities.timer import Timer
 from .interpreter.safety import check_safety_rules
 
@@ -12,15 +13,12 @@ if __name__ == '__main__':
     parser.add_argument("file", type=str, help="The name of the file containing the Datalog program.")
     parser.add_argument("method", type=str, choices=["naive", "seminaive"], help="The method of evaluation (naive or seminaive).")
     parser.add_argument("--output", type=str, default="output.txt", help="The name of the file to which the output will be written (default: output.txt).")
+    parser.add_argument("--verbose", action="store_true", default=False, help="Enable verbose output")
 
     args = parser.parse_args()
 
-    file_name = args.file
-    method = args.method
-    output = args.output
-
     program = ""
-    with open(file_name) as f:
+    with open(args.file) as f:
         program = f.read()
 
     tokenizer = Tokenizer()
@@ -47,13 +45,13 @@ if __name__ == '__main__':
         sys.exit(1)
 
     database = ""
-    if method == "naive":
+    if args.method == "naive":
         with Timer("Naive evaluation"):
-            database = naive_evaluation(facts, rules)
+            database = naive_evaluation(facts, rules, args.verbose)
 
     else:
         with Timer("Semi-naive evaluation"):
-            database = semi_naive_evaluation(facts, rules)
+            database = semi_naive_evaluation(facts, rules, args.verbose)
 
-    with open(output, 'w') as file:
+    with open(args.output, 'w') as file:
         file.write(database)

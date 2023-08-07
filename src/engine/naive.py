@@ -11,40 +11,42 @@ def convert_to_datalog_format(database):
     return result
 
 
-def naive_evaluation(base_facts, rules):
+def naive_evaluation(base_facts, rules, verbose=False):
     database = set(fact.fact for fact in base_facts)
     new_facts = database.copy()  # Initialize new_facts with base facts
 
+    i = 1
     while new_facts:  # Continue as long as there are new facts
+        if verbose:
+            print(f"<---------- Iteration {i} ---------->")
+
         next_new_facts = set()  # To keep track of the facts derived in the next iteration
+        all_derived_facts = set()
+        if verbose:
+                print(f"Input: ")
+                database_formatted = convert_to_datalog_format(database)
+                print(database_formatted)
 
         for rule in rules:
             for match in match_and_join(rule, database):  # Use the entire database to derive new facts
                 derived_fact = project_head(rule, match)
+                if verbose:
+                    all_derived_facts.add(derived_fact)
                 if derived_fact not in database:
                     next_new_facts.add(derived_fact)
-
+        
+        # if verbose:
+        #         print(f"New IDB: ")
+        #         all_derived_facts_formatted = convert_to_datalog_format(all_derived_facts)
+        #         print(all_derived_facts_formatted)
+        
         database.update(next_new_facts)
+        if verbose:
+                print(f"New IDB: ")
+                database_formatted = convert_to_datalog_format(database)
+                print(database_formatted)
         new_facts = next_new_facts  # Update new_facts for the next iteration
-
-    return convert_to_datalog_format(database)
-
-
-def semi_naive_evaluation(base_facts, rules):
-    database = set(fact.fact for fact in base_facts)
-    new_facts = database.copy()  # Initialize new_facts with base facts
-
-    while new_facts:
-        next_new_facts = set()  # To keep track of the facts derived in the next iteration
-
-        for rule in rules:
-            for match in match_and_join(rule, new_facts):
-                derived_fact = project_head(rule, match)
-                if derived_fact not in database:
-                    next_new_facts.add(derived_fact)
-
-        database.update(next_new_facts)
-        new_facts = next_new_facts  # Update new_facts for the next iteration
+        i += 1
 
     return convert_to_datalog_format(database)
 
