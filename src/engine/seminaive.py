@@ -1,5 +1,6 @@
 from ..model.model import Predicate
 
+
 def convert_to_datalog_format(database):
     # Combine all the inner sets into one set
     combined_set = set()
@@ -15,6 +16,7 @@ def convert_to_datalog_format(database):
         terms = ", ".join(item.terms)
         result += f"{predicate}({terms}).\n"
     return result
+
 
 def semi_naive_evaluation(base_facts, rules, verbose=False):
     # Extract predicates from base_facts
@@ -60,6 +62,7 @@ def semi_naive_evaluation(base_facts, rules, verbose=False):
 
     return convert_to_datalog_format(database)
 
+
 def compute_big_delta(rule, delta, database):
     big_delta = set()
 
@@ -82,7 +85,6 @@ def compute_big_delta(rule, delta, database):
             # print("------------------------------")
 
     return big_delta
-
 
 
 def match_and_join_with_delta(current_predicate, delta, other_predicates, database):
@@ -123,6 +125,7 @@ def recursive_join(current_match, remaining_predicates, database):
 
     return matches
 
+
 def join_with_existing_match(predicate, fact, existing_match):
     unifier = {}
 
@@ -146,8 +149,6 @@ def join_with_existing_match(predicate, fact, existing_match):
     return unifier
 
 
-
-
 def join(predicate1, fact1, predicate2, fact2):
     unifier = {}
 
@@ -161,6 +162,7 @@ def join(predicate1, fact1, predicate2, fact2):
             return None
 
     return unifier
+
 
 def unify_terms(terms1, terms2, unifier):
     for term1, term2 in zip(terms1, terms2):
