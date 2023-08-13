@@ -48,7 +48,11 @@ def naive_evaluation(base_facts, rules, verbose=False):
         new_facts = next_new_facts  # Update new_facts for the next iteration
         i += 1
 
-    return convert_to_datalog_format(database)
+
+    to_remove_converted = {item.fact for item in base_facts}
+    idb_database = database - to_remove_converted
+
+    return convert_to_datalog_format(idb_database)
 
 
 def match_and_join(rule, database):
