@@ -1,195 +1,156 @@
 from ..model.model import Predicate
+from collections import defaultdict
+import copy
+
+def convert_to_datalog_format(data):
+    result = []
+    for predicate, facts in data.items():
+        for fact in facts:
+            terms = ", ".join(fact)
+            result.append(f"{predicate}({terms}).")
+    return "\n".join(result)
 
 
-def convert_to_datalog_format(database):
-    # Combine all the inner sets into one set
-    combined_set = set()
-    for value_set in database.values():
-        combined_set.update(value_set)
+def get_facts_matching_predicate(predicate, database):
+    predicate_name = predicate.predicate
+    
+    if predicate_name in database:
+        return database[predicate_name]
+    else:
+        return set()
+    
 
-    # Sort the combined set based on the predicate
-    sorted_data = sorted(combined_set, key=lambda x: x.predicate)
+def is_variable(term):
+    return term[0].isupper()
 
-    result = ""
-    for item in sorted_data:
-        predicate = item.predicate
-        terms = ", ".join(item.terms)
-        result += f"{predicate}({terms}).\n"
+
+def join_match_with_fact(match, fact, predicate):
+    new_match = match.copy()
+
+    for variable, term in zip(predicate.terms, fact):
+        if is_variable(variable):
+            if variable in new_match and new_match[variable] != term:
+                return None
+            new_match[variable] = term
+        else:
+            if variable != term:
+                return None
+
+    return new_match
+
+
+def match_and_join(rule_body, database):
+    matches = [{}]
+    for predicate in rule_body:
+        facts_matching_predicate = get_facts_matching_predicate(predicate, database)
+        new_matches = []
+
+        for match in matches:
+            for fact in facts_matching_predicate:
+                # Join the current match with the current fact
+                joined_match = join_match_with_fact(match, fact, predicate)
+                if joined_match is not None:
+                    new_matches.append(joined_match)
+
+        # Update the matches with the new matches for the current predicate
+        matches = new_matches
+
+    return matches
+
+
+def project_head(rule_head, match, derived_facts):
+    projected_terms = tuple(match[var] if var in match else var for var in rule_head.terms)
+    predicate = rule_head.predicate
+    derived_facts[predicate].add(projected_terms)
+
+
+def apply_rule(rule, database, derived_facts):
+    # print(rule)
+    for match in match_and_join(rule.body, database):
+        project_head(rule.head, match, derived_facts)
+        
+
+def semi_naive_evaluation(base_facts, rules, verbose=False):
+    edb_predicates = defaultdict(set)               # q1, q2, ... , qm
+    for fact in base_facts:
+        edb_predicates[fact.fact.predicate].add(tuple(fact.fact.terms))
+
+
+    idb_predicates = defaultdict(set)               # p1, p2, ..., pn
+    for rule in rules:
+        idb_predicates[rule.head.predicate] = set()
+        for predicate in rule.body:
+            if predicate.predicate not in edb_predicates:
+                idb_predicates[predicate.predicate] = set()
+
+    
+    delta_small = copy.deepcopy(idb_predicates)     # delta_small(p1), delta_small(p2), ..., delta_small(pn)
+
+    # Initialize delta_small with tuples produced by rules using only EDBs
+    for rule in rules:
+        apply_rule(rule, edb_predicates, delta_small)
+
+    i = 1
+    while any(delta_small.values()):
+        for predicate, tuple_set in delta_small.items():
+            idb_predicates[predicate].update(tuple_set)
+        
+        # print(idb_predicates)
+        delta_big = calculate_delta_big(rules, copy.deepcopy(idb_predicates), copy.deepcopy(delta_small), copy.deepcopy(edb_predicates))
+        
+        for predicate, tuple_set in idb_predicates.items():
+            if predicate in delta_small:
+                delta_small[predicate] = delta_big[predicate] - tuple_set
+        if verbose:
+            print(f"<---------- Iteration {i} ---------->")
+            print(f"p[{i}]:")
+            print(convert_to_datalog_format(idb_predicates))
+            print(f"delta(p[{i}]):")
+            print(convert_to_datalog_format(delta_small))
+                    
+        i += 1
+    return convert_to_datalog_format(idb_predicates)
+
+
+def merge_dicts(dict1, dict2):
+    '''Merge two defaultdicts and return the result.'''
+    result = defaultdict(set)
+    for key, value_set in dict1.items():
+        result[key].update(value_set)
+    for key, value_set in dict2.items():
+        result[key].update(value_set)
     return result
 
 
-def semi_naive_evaluation(base_facts, rules, verbose=False):
-    # Extract predicates from base_facts
-    fact_predicates = {fact.fact.predicate for fact in base_facts}
-
-    # Extract predicates from rules (both head and body)
-    rule_predicates = {rule.head.predicate for rule in rules}
-    for rule in rules:
-        for predicate in rule.body:
-            rule_predicates.add(predicate.predicate)
-
-    # Combine the two sets to get all unique predicates
-    unique_predicates = fact_predicates.union(rule_predicates)
-
-    # Initialize database and delta using unique_predicates
-    database = {predicate: set() for predicate in unique_predicates}
-    delta = {predicate: {fact.fact for fact in base_facts if fact.fact.predicate == predicate} for predicate in unique_predicates}
-
-    i = 1
-    while any(delta.values()):  # Continue as long as there are new facts in any of the delta sets        
-        # Update database with the union of its current facts and the delta from the previous iteration
-        if verbose:
-            print(f"<---------- Iteration {i} ---------->")
-            print(f"p[{i-1}]:")
-            print(convert_to_datalog_format(database))
-            print(f"delta(p[{i-1}]):")
-            print(convert_to_datalog_format(delta))
-        for predicate in unique_predicates:
-            database[predicate].update(delta[predicate])
-        
-        next_big_delta = {predicate: set() for predicate in unique_predicates}
-
-        for rule in rules:
-            head_predicate = rule.head.predicate
-            rule_big_delta = compute_big_delta(rule, delta, database)
-
-            # Update the next_big_delta
-            next_big_delta[head_predicate].update(rule_big_delta)
-
-        # Update delta for the next iteration
-        for predicate in unique_predicates:
-            delta[predicate] = next_big_delta[predicate] - database[predicate]
-
-    return convert_to_datalog_format(database)
-
-
-def compute_big_delta(rule, delta, database):
-    big_delta = set()
-
-    # For each predicate in the rule's body, compute the join using the current delta and database
-    for i, predicate in enumerate(rule.body):
-        # Get the other predicates in the rule's body excluding the current predicate
-        other_predicates = rule.body[:i] + rule.body[i+1:]
-        # Use the delta for the current predicate and the database for the other predicates
-        matches = match_and_join_with_delta(predicate, delta, other_predicates, database)
-        for match in matches:
-            derived_fact = project_head(rule, match)
-            big_delta.add(derived_fact)
-
-             # Tracing information
-            # print("Rule:", rule)
-            # print("Matched with:", match)
-            # print("Derived Fact:", derived_fact)
-            # print("Current Delta:", delta)
-            # print("Current Database:", database)
-            # print("------------------------------")
-
-    return big_delta
-
-
-def match_and_join_with_delta(current_predicate, delta, other_predicates, database):
-    matches = []
-
-    # Start with the facts from the delta for the current predicate
-    delta_facts = delta.get(current_predicate.predicate, set())
-    database_facts = database.get(current_predicate.predicate, set())
+def combine_databases(idb_predicates, predicate, delta_small, edb_predicates):
+    # Remove the key-value pair associated with 'predicate'
+    idb_predicates.pop(predicate, None)
     
-    # Merge the facts from delta and database
-    all_facts = delta_facts.union(database_facts)
-
-    for current_fact in all_facts:
-        initial_match = join(current_predicate, current_fact, None, None)
-        if initial_match:
-            matches.extend(recursive_join(initial_match, other_predicates, database))
-
-    return matches
+    # Merge the dictionaries
+    temp_result = merge_dicts(idb_predicates, delta_small)
+    final_database = merge_dicts(temp_result, edb_predicates)
+    
+    return final_database
 
 
-def recursive_join(current_match, remaining_predicates, database):
-    if not remaining_predicates:
-        return [current_match]
-
-    current_predicate = remaining_predicates[0]
-    next_predicates = remaining_predicates[1:]
-
-    current_facts = database.get(current_predicate.predicate, set())
-    matches = []
-
-    for current_fact in current_facts:
-        # Consider the current match when joining
-        new_match = join_with_existing_match(current_predicate, current_fact, current_match)
-        if new_match:
-            # Merge the current match with the new match
-            merged_match = {**current_match, **new_match}
-            matches.extend(recursive_join(merged_match, next_predicates, database))
-
-    return matches
-
-
-def join_with_existing_match(predicate, fact, existing_match):
-    unifier = {}
-
-    # First, ensure that the existing match is consistent
-    for term in predicate.terms:
-        if term[0].isupper() and term in existing_match:
-            unifier[term] = existing_match[term]
-
-    # Now, try to unify the predicate with the fact
-    for term1, term2 in zip(predicate.terms, fact.terms):
-        if term1[0].isupper():  # If term1 is a variable
-            if term1 in unifier:
-                if unifier[term1] != term2:
-                    return None  # Mismatch, so no unification possible
-            else:
-                unifier[term1] = term2
+def apply_rule_with_delta(rule, idb_predicates, delta_small, edb_predicates, delta_big):
+    idb_rule_predicates = []
+    edb_rule_predicates = []
+    for predicate in rule.body:
+        if predicate.predicate in edb_predicates:
+            edb_rule_predicates.append(predicate.predicate)
         else:
-            if term1 != term2:
-                return None  # Mismatch, so no unification possible
-
-    return unifier
-
-
-def join(predicate1, fact1, predicate2, fact2):
-    unifier = {}
-
-    # Unify predicate1 and fact1
-    if not unify_terms(predicate1.terms, fact1.terms, unifier):
-        return None
-
-    # If predicate2 and fact2 are provided, unify them as well
-    if predicate2 and fact2:
-        if not unify_terms(predicate2.terms, fact2.terms, unifier):
-            return None
-
-    return unifier
+            idb_rule_predicates.append(predicate.predicate)
+    
+    for predicate in idb_rule_predicates:
+        database = combine_databases(idb_predicates, predicate, delta_small, edb_predicates)
+        for match in match_and_join(rule.body, database):
+            project_head(rule.head, match, delta_big)
 
 
-def unify_terms(terms1, terms2, unifier):
-    for term1, term2 in zip(terms1, terms2):
-        if term1[0].isupper():  # If term1 is a variable
-            if term1 in unifier:
-                if unifier[term1] != term2:
-                    return False  # Mismatch, so no unification possible
-            else:
-                unifier[term1] = term2
-        else:
-            if term1 != term2:
-                return False  # Mismatch, so no unification possible
-    return True
-
-
-def project_head(rule, match):
-    head = rule.head
-
-    # Construct the derived fact's terms by replacing variables with their
-    # bindings in the match
-    derived_terms = [match[term] if term[0].isupper() else term for term in head.terms]
-
-    # Construct the derived fact as a Predicate object
-    derived_fact_predicate = Predicate(
-        name=head.predicate,
-        terms=derived_terms,
-        type='predicate'
-    )
-
-    return derived_fact_predicate
+def calculate_delta_big(rules, idb_predicates, delta_small, edb_predicates):
+    delta_big = defaultdict(set, {key: set() for key in idb_predicates.keys()})
+    for rule in rules:
+        apply_rule_with_delta(rule, idb_predicates, delta_small, edb_predicates, delta_big)
+    
+    return delta_big
