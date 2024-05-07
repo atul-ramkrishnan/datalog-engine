@@ -1,7 +1,6 @@
 # README
 ## Requirements
-
-
+Python Lex-Yacc
 
 ## How to run the script
 1. Go to the root of the project.
